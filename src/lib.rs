@@ -99,7 +99,7 @@ impl JaroWinkler {
     }
 
     fn transpositions(&self, min: &[u8], max: &[u8]) -> f64 {
-        let mut transpositions = 0.0;
+        let mut t = 0;
         let mut j = 0;
 
         let mut min_flags = self.min_flags.borrow_mut();
@@ -113,7 +113,7 @@ impl JaroWinkler {
                 j += 1;
             }
             if min[i] != max[j] {
-                transpositions += 0.5;
+                t += 1;
             }
             j += 1;
         }
@@ -122,7 +122,7 @@ impl JaroWinkler {
         min_flags[0..max.len()].copy_from_slice(&empty[0..max.len()]);
         max_flags[0..max.len()].copy_from_slice(&empty[0..max.len()]);
 
-        transpositions
+        (t / 2) as f64
     }
 
     fn prefix(&self, min: &[u8], max: &[u8]) -> f64 {
