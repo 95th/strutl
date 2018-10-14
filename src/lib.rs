@@ -10,9 +10,9 @@ pub struct JaroWinkler {
 impl JaroWinkler {
     pub fn new() -> JaroWinkler {
         JaroWinkler {
-            empty: RefCell::new(vec![false; 256]),
-            min_flags: RefCell::new(vec![false; 256]),
-            max_flags: RefCell::new(vec![false; 256]),
+            empty: RefCell::new(vec![false; 128]),
+            min_flags: RefCell::new(vec![false; 128]),
+            max_flags: RefCell::new(vec![false; 128]),
         }
     }
 
