@@ -3,4 +3,11 @@ name = "gs"
 version = "0.1.0"
 authors = ["Gurwinder Singh"]
 
+[lib]
+name = "gs"
+crate-type=["rlib"]
+
+[[bin]]
+name = "gs"
+
 [dependencies]
