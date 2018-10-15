@@ -118,9 +118,9 @@ impl JaroWinkler {
             j += 1;
         }
 
-        let empty = &self.empty.borrow();
-        min_flags[0..max.len()].copy_from_slice(&empty[0..max.len()]);
-        max_flags[0..max.len()].copy_from_slice(&empty[0..max.len()]);
+        let empty = &self.empty.borrow()[0..max.len()];
+        min_flags[0..max.len()].copy_from_slice(empty);
+        max_flags[0..max.len()].copy_from_slice(empty);
 
         (t / 2) as f64
     }
