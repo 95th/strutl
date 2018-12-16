@@ -42,6 +42,7 @@ impl JaroWinkler {
         }
     }
 
+    #[inline]
     fn ensure_capacity(&self, capacity: usize) {
         let current_capacity = self.empty.borrow().len();
         if capacity <= current_capacity {
@@ -57,6 +58,7 @@ impl JaroWinkler {
         self.max_flags.borrow_mut().resize(new_capacity, false);
     }
 
+    #[inline]
     fn calculate(&self, min: &[u8], max: &[u8]) -> f64 {
         let m = self.matches(min, max);
 
@@ -73,6 +75,7 @@ impl JaroWinkler {
         j + 0.1 * p * (1.0 - j)
     }
 
+    #[inline]
     fn matches(&self, min: &[u8], max: &[u8]) -> f64 {
         let range = cmp::max(max.len() / 2 - 1, 0);
         let mut matches = 0.0;
@@ -98,6 +101,7 @@ impl JaroWinkler {
         matches
     }
 
+    #[inline]
     fn transpositions(&self, min: &[u8], max: &[u8]) -> f64 {
         let mut t = 0;
         let mut j = 0;
@@ -125,6 +129,7 @@ impl JaroWinkler {
         (t / 2) as f64
     }
 
+    #[inline]
     fn prefix(&self, min: &[u8], max: &[u8]) -> f64 {
         let mut prefix = 0.0;
         for i in 0..cmp::min(min.len(), 4) {
