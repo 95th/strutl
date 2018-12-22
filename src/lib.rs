@@ -1,22 +1,24 @@
-use std::cell::RefCell;
 use std::cmp;
 
+/// A simple mutable implementation of Jaro-Winkler to
+/// keep memory allocations minimum.
 pub struct JaroWinkler {
-    empty: RefCell<Vec<bool>>,
-    min_flags: RefCell<Vec<bool>>,
-    max_flags: RefCell<Vec<bool>>,
+    empty: Vec<bool>,
+    min_flags: Vec<bool>,
+    max_flags: Vec<bool>,
 }
 
 impl JaroWinkler {
     pub fn new() -> JaroWinkler {
         JaroWinkler {
-            empty: RefCell::new(vec![false; 128]),
-            min_flags: RefCell::new(vec![false; 128]),
-            max_flags: RefCell::new(vec![false; 128]),
+            empty: vec![false; 128],
+            min_flags: vec![false; 128],
+            max_flags: vec![false; 128],
         }
     }
 
-    pub fn apply(&self, s1: &str, s2: &str) -> f64 {
+    /// Match two input strings and produces a score between 0 and 1.
+    pub fn apply(&mut self, s1: &str, s2: &str) -> f64 {
         if s1.is_empty() && s2.is_empty() {
             return 1.0;
         }
@@ -42,9 +44,8 @@ impl JaroWinkler {
         }
     }
 
-    #[inline]
-    fn ensure_capacity(&self, capacity: usize) {
-        let current_capacity = self.empty.borrow().len();
+    fn ensure_capacity(&mut self, capacity: usize) {
+        let current_capacity = self.empty.len();
         if capacity <= current_capacity {
             return;
         }
@@ -53,13 +54,12 @@ impl JaroWinkler {
         if new_capacity < capacity {
             new_capacity = capacity;
         }
-        self.empty.borrow_mut().resize(new_capacity, false);
-        self.min_flags.borrow_mut().resize(new_capacity, false);
-        self.max_flags.borrow_mut().resize(new_capacity, false);
+        self.empty.resize(new_capacity, false);
+        self.min_flags.resize(new_capacity, false);
+        self.max_flags.resize(new_capacity, false);
     }
 
-    #[inline]
-    fn calculate(&self, min: &[u8], max: &[u8]) -> f64 {
+    fn calculate(&mut self, min: &[u8], max: &[u8]) -> f64 {
         let m = self.matches(min, max);
 
         if m == 0.0 {
@@ -75,13 +75,12 @@ impl JaroWinkler {
         j + 0.1 * p * (1.0 - j)
     }
 
-    #[inline]
-    fn matches(&self, min: &[u8], max: &[u8]) -> f64 {
+    fn matches(&mut self, min: &[u8], max: &[u8]) -> f64 {
         let range = cmp::max(max.len() / 2 - 1, 0);
         let mut matches = 0.0;
 
-        let mut min_flags = self.min_flags.borrow_mut();
-        let mut max_flags = self.max_flags.borrow_mut();
+        let min_flags = &mut self.min_flags;
+        let max_flags = &mut self.max_flags;
 
         for i in 0..min.len() {
             let c = min[i];
@@ -101,13 +100,12 @@ impl JaroWinkler {
         matches
     }
 
-    #[inline]
-    fn transpositions(&self, min: &[u8], max: &[u8]) -> f64 {
+    fn transpositions(&mut self, min: &[u8], max: &[u8]) -> f64 {
         let mut t = 0;
         let mut j = 0;
 
-        let mut min_flags = self.min_flags.borrow_mut();
-        let mut max_flags = self.max_flags.borrow_mut();
+        let min_flags = &mut self.min_flags;
+        let max_flags = &mut self.max_flags;
 
         for i in 0..min.len() {
             if !min_flags[i] {
@@ -122,14 +120,13 @@ impl JaroWinkler {
             j += 1;
         }
 
-        let empty = &self.empty.borrow()[0..max.len()];
+        let empty = &self.empty[0..max.len()];
         min_flags[0..max.len()].copy_from_slice(empty);
         max_flags[0..max.len()].copy_from_slice(empty);
 
         (t / 2) as f64
     }
 
-    #[inline]
     fn prefix(&self, min: &[u8], max: &[u8]) -> f64 {
         let mut prefix = 0.0;
         for i in 0..cmp::min(min.len(), 4) {
@@ -140,5 +137,31 @@ impl JaroWinkler {
             }
         }
         prefix
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::JaroWinkler;
+
+    #[test]
+    fn partial_match() {
+        let mut jw = JaroWinkler::new();
+        let score = jw.apply("Foo bar", "Food candybar");
+        assert_eq!(score, 0.7897435897435898);
+    }
+
+    #[test]
+    fn full_match() {
+        let mut jw = JaroWinkler::new();
+        let score = jw.apply("Foo bar", "Foo bar");
+        assert_eq!(score, 1.0);
+    }
+
+    #[test]
+    fn no_match() {
+        let mut jw = JaroWinkler::new();
+        let score = jw.apply("Foobar", "pqxyz");
+        assert_eq!(score, 0.0);
     }
 }
