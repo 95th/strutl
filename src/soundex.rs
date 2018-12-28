@@ -35,11 +35,13 @@ pub fn soundex(s: &str) -> String {
     String::from_utf8(result).unwrap()
 }
 
+#[inline]
 fn map(c: u8) -> u8 {
     let i = c - b'A';
     SOUNDEX_MAP[i as usize]
 }
 
+#[inline]
 fn clean(s: &str) -> String {
     if s.is_empty() {
         return "".to_string();
