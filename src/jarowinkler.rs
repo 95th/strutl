@@ -3,9 +3,9 @@ use std::cmp;
 /// A simple mutable implementation of Jaro-Winkler to
 /// keep memory allocations minimum.
 pub struct JaroWinkler {
-    empty: Vec<bool>,
-    min_flags: Vec<bool>,
-    max_flags: Vec<bool>,
+    empty: Box<[bool]>,
+    min_flags: Box<[bool]>,
+    max_flags: Box<[bool]>,
 }
 
 impl JaroWinkler {
@@ -16,9 +16,9 @@ impl JaroWinkler {
     pub fn with_size(size: usize) -> Self {
         assert_ne!(size, 0);
         JaroWinkler {
-            empty: vec![false; size],
-            min_flags: vec![false; size],
-            max_flags: vec![false; size],
+            empty: vec![false; size].into_boxed_slice(),
+            min_flags: vec![false; size].into_boxed_slice(),
+            max_flags: vec![false; size].into_boxed_slice(),
         }
     }
 
@@ -59,9 +59,9 @@ impl JaroWinkler {
         if new_capacity < capacity {
             new_capacity = capacity;
         }
-        self.empty.resize(new_capacity, false);
-        self.min_flags.resize(new_capacity, false);
-        self.max_flags.resize(new_capacity, false);
+        self.empty = vec![false; new_capacity].into_boxed_slice();
+        self.min_flags = vec![false; new_capacity].into_boxed_slice();
+        self.max_flags = vec![false; new_capacity].into_boxed_slice();
     }
 
     fn calculate(&mut self, min: &[u8], max: &[u8]) -> f64 {
@@ -84,9 +84,6 @@ impl JaroWinkler {
         let range = cmp::max(max.len() / 2 - 1, 0);
         let mut matches = 0.0;
 
-        let min_flags = &mut self.min_flags;
-        let max_flags = &mut self.max_flags;
-
         for i in 0..min.len() {
             let c = min[i];
 
@@ -94,9 +91,9 @@ impl JaroWinkler {
             let end = cmp::min(i + range + 1, max.len());
 
             for j in start..end {
-                if !max_flags[j] && c == max[j] {
-                    min_flags[i] = true;
-                    max_flags[j] = true;
+                if !self.max_flags[j] && c == max[j] {
+                    self.min_flags[i] = true;
+                    self.max_flags[j] = true;
                     matches += 1.0;
                     break;
                 }
@@ -109,14 +106,11 @@ impl JaroWinkler {
         let mut t = 0;
         let mut j = 0;
 
-        let min_flags = &mut self.min_flags;
-        let max_flags = &mut self.max_flags;
-
         for i in 0..min.len() {
-            if !min_flags[i] {
+            if !self.min_flags[i] {
                 continue;
             }
-            while j < max.len() && !max_flags[j] {
+            while j < max.len() && !self.max_flags[j] {
                 j += 1;
             }
             if min[i] != max[j] {
@@ -126,8 +120,8 @@ impl JaroWinkler {
         }
 
         let empty = &self.empty[0..max.len()];
-        min_flags[0..max.len()].copy_from_slice(empty);
-        max_flags[0..max.len()].copy_from_slice(empty);
+        self.min_flags[0..max.len()].copy_from_slice(empty);
+        self.max_flags[0..max.len()].copy_from_slice(empty);
 
         (t / 2) as f64
     }
