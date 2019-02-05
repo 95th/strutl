@@ -1,6 +1,10 @@
 [package]
-name = "gurv"
+name = "text"
 version = "0.1.0"
 authors = ["Gurwinder Singh"]
+edition = "2018"
 
 [dependencies]
+
+[profile.release]
+lto = true

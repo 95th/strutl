@@ -10,10 +10,15 @@ pub struct JaroWinkler {
 
 impl JaroWinkler {
     pub fn new() -> JaroWinkler {
+        JaroWinkler::with_size(128)
+    }
+
+    pub fn with_size(size: usize) -> Self {
+        assert_ne!(size, 0);
         JaroWinkler {
-            empty: vec![false; 128],
-            min_flags: vec![false; 128],
-            max_flags: vec![false; 128],
+            empty: vec![false; size],
+            min_flags: vec![false; size],
+            max_flags: vec![false; size],
         }
     }
 
