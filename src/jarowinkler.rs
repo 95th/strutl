@@ -3,9 +3,9 @@ use std::cmp;
 /// A simple mutable implementation of Jaro-Winkler to
 /// keep memory allocations minimum.
 pub struct JaroWinkler {
-    empty: Box<[bool]>,
-    min_flags: Box<[bool]>,
-    max_flags: Box<[bool]>,
+    empty: Vec<bool>,
+    min_flags: Vec<bool>,
+    max_flags: Vec<bool>,
 }
 
 impl JaroWinkler {
@@ -16,9 +16,9 @@ impl JaroWinkler {
     pub fn with_size(size: usize) -> Self {
         assert_ne!(size, 0);
         JaroWinkler {
-            empty: vec![false; size].into_boxed_slice(),
-            min_flags: vec![false; size].into_boxed_slice(),
-            max_flags: vec![false; size].into_boxed_slice(),
+            empty: vec![false; size],
+            min_flags: vec![false; size],
+            max_flags: vec![false; size],
         }
     }
 
@@ -59,9 +59,9 @@ impl JaroWinkler {
         if new_capacity < capacity {
             new_capacity = capacity;
         }
-        self.empty = vec![false; new_capacity].into_boxed_slice();
-        self.min_flags = vec![false; new_capacity].into_boxed_slice();
-        self.max_flags = vec![false; new_capacity].into_boxed_slice();
+        self.empty = vec![false; new_capacity];
+        self.min_flags = vec![false; new_capacity];
+        self.max_flags = vec![false; new_capacity];
     }
 
     fn calculate(&mut self, min: &[u8], max: &[u8]) -> f64 {
