@@ -3,7 +3,6 @@ use std::cmp;
 /// A simple mutable implementation of Jaro-Winkler to
 /// keep memory allocations minimum.
 pub struct JaroWinkler {
-    empty: Vec<bool>,
     min_flags: Vec<bool>,
     max_flags: Vec<bool>,
 }
@@ -16,7 +15,6 @@ impl JaroWinkler {
     pub fn with_size(size: usize) -> Self {
         assert_ne!(size, 0);
         JaroWinkler {
-            empty: vec![false; size],
             min_flags: vec![false; size],
             max_flags: vec![false; size],
         }
@@ -50,7 +48,7 @@ impl JaroWinkler {
     }
 
     fn ensure_capacity(&mut self, capacity: usize) {
-        let current_capacity = self.empty.len();
+        let current_capacity = self.min_flags.len();
         if capacity <= current_capacity {
             return;
         }
@@ -59,7 +57,6 @@ impl JaroWinkler {
         if new_capacity < capacity {
             new_capacity = capacity;
         }
-        self.empty = vec![false; new_capacity];
         self.min_flags = vec![false; new_capacity];
         self.max_flags = vec![false; new_capacity];
     }
@@ -110,17 +107,21 @@ impl JaroWinkler {
             if !self.min_flags[i] {
                 continue;
             }
+
+            self.min_flags[i] = false;
+
             while j < max.len() && !self.max_flags[j] {
                 j += 1;
             }
+
+            self.max_flags[j] = false;
+
             if min[i] != max[j] {
                 t += 1;
             }
+
             j += 1;
         }
-
-        self.min_flags[..min.len()].copy_from_slice(&self.empty[..min.len()]);
-        self.max_flags[..max.len()].copy_from_slice(&self.empty[..max.len()]);
 
         (t / 2) as f64
     }
