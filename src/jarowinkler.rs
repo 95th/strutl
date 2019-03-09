@@ -8,7 +8,7 @@ pub struct JaroWinkler {
 }
 
 impl JaroWinkler {
-    pub fn new() -> JaroWinkler {
+    pub fn new() -> Self {
         JaroWinkler::with_size(128)
     }
 
