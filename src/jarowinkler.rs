@@ -3,7 +3,7 @@ use std::cmp;
 /// A simple mutable implementation of Jaro-Winkler to
 /// keep memory allocations minimum.
 pub struct JaroWinkler {
-    min_indices: Vec<isize>,
+    min_indices: Vec<Option<usize>>,
     max_flags: Vec<bool>,
 }
 
@@ -15,7 +15,7 @@ impl JaroWinkler {
     pub fn with_size(size: usize) -> Self {
         assert_ne!(size, 0);
         JaroWinkler {
-            min_indices: vec![-1; size],
+            min_indices: vec![None; size],
             max_flags: vec![false; size],
         }
     }
@@ -57,7 +57,7 @@ impl JaroWinkler {
         if new_capacity < capacity {
             new_capacity = capacity;
         }
-        self.min_indices = vec![-1; new_capacity];
+        self.min_indices = vec![None; new_capacity];
         self.max_flags = vec![false; new_capacity];
     }
 
@@ -89,7 +89,7 @@ impl JaroWinkler {
 
             for j in start..end {
                 if !self.max_flags[j] && c == max[j] {
-                    self.min_indices[index] = i as isize;
+                    self.min_indices[index] = Some(i);
                     self.max_flags[j] = true;
                     index += 1;
                     matches += 1;
@@ -105,12 +105,12 @@ impl JaroWinkler {
         let mut max_index = 0;
 
         for i in 0..min.len() {
-            let min_index = self.min_indices[i];
-            if min_index == -1 {
-                break;
-            }
+            let min_index = match self.min_indices[i] {
+                Some(v) => v,
+                None => break
+            };
 
-            self.min_indices[i] = -1;
+            self.min_indices[i] = None;
 
             while !self.max_flags[max_index] {
                 max_index += 1;
@@ -118,7 +118,7 @@ impl JaroWinkler {
 
             self.max_flags[max_index] = false;
 
-            if min[min_index as usize] != max[max_index] {
+            if min[min_index] != max[max_index] {
                 t += 1;
             }
 
