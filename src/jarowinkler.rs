@@ -3,7 +3,7 @@ use std::cmp;
 /// A simple mutable implementation of Jaro-Winkler to
 /// keep memory allocations minimum.
 pub struct JaroWinkler {
-    min_flags: Vec<bool>,
+    min_indices: Vec<isize>,
     max_flags: Vec<bool>,
 }
 
@@ -15,7 +15,7 @@ impl JaroWinkler {
     pub fn with_size(size: usize) -> Self {
         assert_ne!(size, 0);
         JaroWinkler {
-            min_flags: vec![false; size],
+            min_indices: vec![-1; size],
             max_flags: vec![false; size],
         }
     }
@@ -48,7 +48,7 @@ impl JaroWinkler {
     }
 
     fn ensure_capacity(&mut self, capacity: usize) {
-        let current_capacity = self.min_flags.len();
+        let current_capacity = self.min_indices.len();
         if capacity <= current_capacity {
             return;
         }
@@ -57,7 +57,7 @@ impl JaroWinkler {
         if new_capacity < capacity {
             new_capacity = capacity;
         }
-        self.min_flags = vec![false; new_capacity];
+        self.min_indices = vec![-1; new_capacity];
         self.max_flags = vec![false; new_capacity];
     }
 
@@ -79,8 +79,8 @@ impl JaroWinkler {
 
     fn matches(&mut self, min: &[u8], max: &[u8]) -> f64 {
         let range = cmp::max(max.len() / 2 - 1, 0);
-        let mut matches = 0.0;
-
+        let mut matches = 0;
+        let mut index = 0;
         for i in 0..min.len() {
             let c = min[i];
 
@@ -89,38 +89,40 @@ impl JaroWinkler {
 
             for j in start..end {
                 if !self.max_flags[j] && c == max[j] {
-                    self.min_flags[i] = true;
+                    self.min_indices[index] = i as isize;
                     self.max_flags[j] = true;
-                    matches += 1.0;
+                    index += 1;
+                    matches += 1;
                     break;
                 }
             }
         }
-        matches
+        matches as f64
     }
 
     fn transpositions(&mut self, min: &[u8], max: &[u8]) -> f64 {
         let mut t = 0;
-        let mut j = 0;
+        let mut max_index = 0;
 
         for i in 0..min.len() {
-            if !self.min_flags[i] {
-                continue;
+            let min_index = self.min_indices[i];
+            if min_index == -1 {
+                break;
             }
 
-            self.min_flags[i] = false;
+            self.min_indices[i] = -1;
 
-            while j < max.len() && !self.max_flags[j] {
-                j += 1;
+            while !self.max_flags[max_index] {
+                max_index += 1;
             }
 
-            self.max_flags[j] = false;
+            self.max_flags[max_index] = false;
 
-            if min[i] != max[j] {
+            if min[min_index as usize] != max[max_index] {
                 t += 1;
             }
 
-            j += 1;
+            max_index += 1;
         }
 
         (t / 2) as f64
