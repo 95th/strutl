@@ -129,15 +129,15 @@ impl JaroWinkler {
     }
 
     fn prefix(&self, min: &[u8], max: &[u8]) -> f64 {
-        let mut prefix = 0.0;
+        let mut prefix = 0;
         for i in 0..cmp::min(min.len(), 4) {
             if min[i] == max[i] {
-                prefix += 1.0;
+                prefix += 1;
             } else {
                 break;
             }
         }
-        prefix
+        prefix as f64
     }
 }
 
