@@ -2,8 +2,9 @@ use std::cmp;
 
 /// A simple mutable implementation of Jaro-Winkler to
 /// keep memory allocations minimum.
+#[derive(Default)]
 pub struct JaroWinkler {
-    min_indices: Vec<Option<usize>>,
+    min_indices: Vec<isize>,
     max_flags: Vec<bool>,
 }
 
@@ -15,7 +16,7 @@ impl JaroWinkler {
     pub fn with_size(size: usize) -> Self {
         assert_ne!(size, 0);
         JaroWinkler {
-            min_indices: vec![None; size],
+            min_indices: vec![-1; size],
             max_flags: vec![false; size],
         }
     }
@@ -28,10 +29,6 @@ impl JaroWinkler {
 
         if s1.is_empty() || s2.is_empty() {
             return 0.0;
-        }
-
-        if s1 == s2 {
-            return 1.0;
         }
 
         let b1 = s1.as_bytes();
@@ -57,7 +54,7 @@ impl JaroWinkler {
         if new_capacity < capacity {
             new_capacity = capacity;
         }
-        self.min_indices = vec![None; new_capacity];
+        self.min_indices = vec![-1; new_capacity];
         self.max_flags = vec![false; new_capacity];
     }
 
@@ -81,15 +78,13 @@ impl JaroWinkler {
         let range = cmp::max(max.len() / 2 - 1, 0);
         let mut matches = 0;
         let mut index = 0;
-        for i in 0..min.len() {
-            let c = min[i];
-
+        for (i, c1) in min.iter().enumerate() {
             let start = if i > range { i - range } else { 0 };
             let end = cmp::min(i + range + 1, max.len());
 
-            for j in start..end {
-                if !self.max_flags[j] && c == max[j] {
-                    self.min_indices[index] = Some(i);
+            for (j, c2) in max.iter().enumerate().take(end).skip(start) {
+                if !self.max_flags[j] && c1 == c2 {
+                    self.min_indices[index] = i as isize;
                     self.max_flags[j] = true;
                     index += 1;
                     matches += 1;
@@ -97,7 +92,7 @@ impl JaroWinkler {
                 }
             }
         }
-        matches as f64
+        f64::from(matches)
     }
 
     fn transpositions(&mut self, min: &[u8], max: &[u8]) -> f64 {
@@ -106,26 +101,24 @@ impl JaroWinkler {
 
         for i in 0..min.len() {
             let min_index = match self.min_indices[i] {
-                Some(v) => v,
-                None => break
+                v if v < 0 => break,
+                v => v as usize,
             };
-
-            self.min_indices[i] = None;
 
             while !self.max_flags[max_index] {
                 max_index += 1;
             }
 
-            self.max_flags[max_index] = false;
-
             if min[min_index] != max[max_index] {
                 t += 1;
             }
 
+            self.min_indices[i] = -1;
+            self.max_flags[max_index] = false;
             max_index += 1;
         }
 
-        (t / 2) as f64
+        f64::from(t / 2)
     }
 
     fn prefix(&self, min: &[u8], max: &[u8]) -> f64 {
@@ -137,7 +130,7 @@ impl JaroWinkler {
                 break;
             }
         }
-        prefix as f64
+        f64::from(prefix)
     }
 }
 

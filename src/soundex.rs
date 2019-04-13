@@ -12,14 +12,14 @@ pub fn soundex(s: &str) -> String {
     let mut last = map(first);
     let mut count = 1;
 
-    for i in 1..b.len() {
+    for c in b.iter().skip(1) {
         if count > 3 {
             break;
         }
 
-        let c = match b[i] {
+        let c = match c {
             b'H' | b'W' => continue,
-            c => map(c),
+            c => map(*c),
         };
 
         if c == b'-' {
