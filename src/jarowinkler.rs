@@ -144,3 +144,31 @@ impl<'a> Inner<'a> {
         f64::from(prefix)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::JaroWinkler;
+
+    #[test]
+    fn partial_match() {
+        let mut jw = JaroWinkler::new();
+        let score = jw.apply("Foo bar", "Food candybar");
+        assert_eq!(score, 0.7897435897435898);
+    }
+
+    #[test]
+    fn full_match() {
+        let mut jw = JaroWinkler::new();
+        let score = jw.apply("Foo bar", "Foo bar");
+        assert_eq!(score, 1.0);
+    }
+
+    #[test]
+    fn no_match() {
+        let mut jw = JaroWinkler::new();
+        let score = jw.apply("Foobar", "pqxyz");
+        assert_eq!(score, 0.0);
+    }
+}
+
