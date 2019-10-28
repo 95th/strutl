@@ -78,13 +78,21 @@ struct Inner<'a> {
 
 impl<'a> Inner<'a> {
     fn new(indices: &'a mut [isize], min: &'a [u8], max: &'a [u8]) -> Self {
-        let (min_indices, max_flags) = indices.split_at_mut(min.len());
-        let max_flags = &mut max_flags[..max.len()];
-        Self {
-            min_indices,
-            max_flags,
-            min,
-            max,
+        use std::slice::from_raw_parts_mut;
+        let ptr = indices.as_mut_ptr();
+
+        // Safety: we ensured that both `min` and `max` are non-zero length in `JaroWinkler::apply` method
+        // and `indices` is at least as large as `min.len() + max.len()` in `JaroWinkler::ensure_capacity`
+        unsafe {
+            let min_indices = from_raw_parts_mut(ptr, min.len());
+            let max_flags = from_raw_parts_mut(ptr.add(min.len()), max.len());
+
+            Self {
+                min_indices,
+                max_flags,
+                min,
+                max,
+            }
         }
     }
 
@@ -92,17 +100,21 @@ impl<'a> Inner<'a> {
         let range = (self.max.len() / 2 - 1).max(0);
         let mut matches = 0;
         let mut index = 0;
-        for (i, c1) in self.min.iter().enumerate() {
-            let start = if i > range { i - range } else { 0 };
-            let end = (i + range + 1).min(self.max.len());
+        for i in 0..self.min.len() {
+            let c1 = self.min[i];
+            let start = i.saturating_sub(range);
+            let end = self.max.len().min(i + range + 1);
 
-            for (j, c2) in self.max.iter().enumerate().take(end).skip(start) {
-                if self.max_flags[j] != 0 && c1 == c2 {
-                    self.min_indices[index] = i as isize;
-                    self.max_flags[j] = 0;
-                    index += 1;
-                    matches += 1;
-                    break;
+            for j in start..end {
+                unsafe {
+                    let c2 = *self.max.get_unchecked(j);
+                    if c1 == c2 && *self.max_flags.get_unchecked(j) != 0 {
+                        *self.min_indices.get_unchecked_mut(index) = i as isize;
+                        *self.max_flags.get_unchecked_mut(j) = 0;
+                        index += 1;
+                        matches += 1;
+                        break;
+                    }
                 }
             }
         }
@@ -114,19 +126,21 @@ impl<'a> Inner<'a> {
         let mut max_index = 0;
 
         for i in 0..matches as usize {
-            let min_index = self.min_indices[i] as usize;
+            unsafe {
+                let min_index = *self.min_indices.get_unchecked(i) as usize;
 
-            while self.max_flags[max_index] != 0 {
+                while *self.max_flags.get_unchecked(max_index) != 0 {
+                    max_index += 1;
+                }
+
+                if *self.min.get_unchecked(min_index) != *self.max.get_unchecked(max_index) {
+                    t += 1;
+                }
+
+                *self.min_indices.get_unchecked_mut(i) = -1;
+                *self.max_flags.get_unchecked_mut(max_index) = -1;
                 max_index += 1;
             }
-
-            if self.min[min_index] != self.max[max_index] {
-                t += 1;
-            }
-
-            self.min_indices[i] = -1;
-            self.max_flags[max_index] = -1;
-            max_index += 1;
         }
 
         f64::from(t / 2)
@@ -135,7 +149,7 @@ impl<'a> Inner<'a> {
     fn prefix(&self) -> f64 {
         let mut prefix = 0;
         for i in 0..self.min.len().min(4) {
-            if self.min[i] == self.max[i] {
+            if unsafe { *self.min.get_unchecked(i) == *self.max.get_unchecked(i) } {
                 prefix += 1;
             } else {
                 break;
@@ -144,7 +158,6 @@ impl<'a> Inner<'a> {
         f64::from(prefix)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -171,4 +184,3 @@ mod tests {
         assert_eq!(score, 0.0);
     }
 }
-
