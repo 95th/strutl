@@ -106,15 +106,13 @@ impl<'a> Inner<'a> {
             let end = self.max.len().min(i + range + 1);
 
             for j in start..end {
-                unsafe {
-                    let c2 = *self.max.get_unchecked(j);
-                    if c1 == c2 && *self.max_flags.get_unchecked(j) != 0 {
-                        *self.min_indices.get_unchecked_mut(index) = i as isize;
-                        *self.max_flags.get_unchecked_mut(j) = 0;
-                        index += 1;
-                        matches += 1;
-                        break;
-                    }
+                let c2 = self.max[j];
+                if c1 == c2 && self.max_flags[j] != 0 {
+                    unsafe { *self.min_indices.get_unchecked_mut(index) = i as isize };
+                    self.max_flags[j] = 0;
+                    index += 1;
+                    matches += 1;
+                    break;
                 }
             }
         }
@@ -139,23 +137,20 @@ impl<'a> Inner<'a> {
 
                 *self.min_indices.get_unchecked_mut(i) = -1;
                 *self.max_flags.get_unchecked_mut(max_index) = -1;
-                max_index += 1;
             }
+            max_index += 1;
         }
 
         f64::from(t / 2)
     }
 
     fn prefix(&self) -> f64 {
-        let mut prefix = 0;
-        for i in 0..self.min.len().min(4) {
-            if unsafe { *self.min.get_unchecked(i) == *self.max.get_unchecked(i) } {
-                prefix += 1;
-            } else {
-                break;
-            }
-        }
-        f64::from(prefix)
+        self.min
+            .iter()
+            .zip(self.max.iter())
+            .take(4)
+            .take_while(|(a, b)| a == b)
+            .count() as f64
     }
 }
 
