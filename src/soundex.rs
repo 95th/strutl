@@ -1,25 +1,29 @@
 const SOUNDEX_MAP: &[u8] = b"01230120022455012623010202";
 
-pub fn soundex(s: &str) -> String {
+pub fn calc_soundex(s: &str) -> String {
     if s.is_empty() {
-        return "".to_string();
+        return String::new();
     }
 
     let s = clean(s);
+    if s.is_empty() {
+        return s;
+    }
+
     let b = s.as_bytes();
     let first = b[0];
     let mut result = vec![first, b'0', b'0', b'0'];
     let mut last = map(first);
     let mut count = 1;
 
-    for c in b.iter().skip(1) {
+    for &c in &b[1..] {
         if count > 3 {
             break;
         }
 
         let c = match c {
             b'H' | b'W' => continue,
-            c => map(*c),
+            c => map(c),
         };
 
         if c == b'-' {
@@ -43,10 +47,6 @@ fn map(c: u8) -> u8 {
 
 #[inline]
 fn clean(s: &str) -> String {
-    if s.is_empty() {
-        return "".to_string();
-    }
-
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
         if c.is_alphabetic() {

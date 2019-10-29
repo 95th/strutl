@@ -43,7 +43,7 @@ impl JaroWinkler {
             return;
         }
 
-        let mut new_capacity = current_capacity << 1;
+        let mut new_capacity = current_capacity * 2;
         if new_capacity < capacity {
             new_capacity = capacity;
         }
@@ -58,11 +58,11 @@ impl JaroWinkler {
             return 0.0;
         }
 
-        let t = inner.transpositions(m);
-        let p = inner.prefix();
+        let t = inner.transpositions(m) as f64;
+        let p = inner.prefix() as f64;
         let min_len = min.len() as f64;
         let max_len = max.len() as f64;
-        let m = f64::from(m);
+        let m = m as f64;
 
         let j = (m / min_len + m / max_len + (m - t) / m) / 3.0;
         j + 0.1 * p * (1.0 - j)
@@ -96,7 +96,7 @@ impl<'a> Inner<'a> {
         }
     }
 
-    fn matches(&mut self) -> u32 {
+    fn matches(&mut self) -> usize {
         let range = (self.max.len() / 2 - 1).max(0);
         let mut matches = 0;
         let mut index = 0;
@@ -119,11 +119,11 @@ impl<'a> Inner<'a> {
         matches
     }
 
-    fn transpositions(&mut self, matches: u32) -> f64 {
+    fn transpositions(&mut self, matches: usize) -> usize {
         let mut t = 0;
         let mut max_index = 0;
 
-        for i in 0..matches as usize {
+        for i in 0..matches {
             unsafe {
                 let min_index = *self.min_indices.get_unchecked(i) as usize;
 
@@ -141,16 +141,16 @@ impl<'a> Inner<'a> {
             max_index += 1;
         }
 
-        f64::from(t / 2)
+        t / 2
     }
 
-    fn prefix(&self) -> f64 {
+    fn prefix(&self) -> usize {
         self.min
             .iter()
             .zip(self.max.iter())
             .take(4)
             .take_while(|(a, b)| a == b)
-            .count() as f64
+            .count()
     }
 }
 
