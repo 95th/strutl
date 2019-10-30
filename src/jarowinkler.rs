@@ -97,9 +97,9 @@ impl<'a> Inner<'a> {
     }
 
     fn matches(&mut self) -> usize {
-        let range = (self.max.len() / 2 - 1).max(0);
+        let range = (self.max.len() / 2).saturating_sub(1);
         let mut matches = 0;
-        let mut index = 0;
+        let mut min_indices_ptr = self.min_indices.as_mut_ptr();
         for i in 0..self.min.len() {
             let c1 = self.min[i];
             let start = i.saturating_sub(range);
@@ -108,9 +108,11 @@ impl<'a> Inner<'a> {
             for j in start..end {
                 let c2 = self.max[j];
                 if c1 == c2 && self.max_flags[j] != 0 {
-                    unsafe { *self.min_indices.get_unchecked_mut(index) = i as isize };
+                    unsafe {
+                        min_indices_ptr.write(i as isize);
+                        min_indices_ptr = min_indices_ptr.add(1);
+                    }
                     self.max_flags[j] = 0;
-                    index += 1;
                     matches += 1;
                     break;
                 }
