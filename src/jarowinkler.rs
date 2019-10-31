@@ -1,3 +1,15 @@
+macro_rules! unsafe_assert {
+    ($condition: expr) => {
+        if !$condition {
+            if cfg!(debug_assertions) {
+                panic!("Assertion failed: {}", stringify!($condition));
+            } else {
+                unsafe { std::hint::unreachable_unchecked() };
+            }
+        }
+    };
+}
+
 /// A simple mutable implementation of Jaro-Winkler to
 /// keep memory allocations minimum.
 #[derive(Default)]
@@ -99,7 +111,7 @@ impl<'a> Inner<'a> {
     fn matches(&mut self) -> usize {
         let range = (self.max.len() / 2).saturating_sub(1);
         let mut matches = 0;
-        let mut min_indices_ptr = self.min_indices.as_mut_ptr();
+        let mut index = 0;
         for i in 0..self.min.len() {
             let c1 = self.min[i];
             let start = i.saturating_sub(range);
@@ -108,12 +120,11 @@ impl<'a> Inner<'a> {
             for j in start..end {
                 let c2 = self.max[j];
                 if c1 == c2 && self.max_flags[j] != 0 {
-                    unsafe {
-                        min_indices_ptr.write(i as isize);
-                        min_indices_ptr = min_indices_ptr.add(1);
-                    }
+                    unsafe_assert! { index < self.min_indices.len() };
+                    self.min_indices[index] = i as isize;
                     self.max_flags[j] = 0;
                     matches += 1;
+                    index += 1;
                     break;
                 }
             }
@@ -126,20 +137,24 @@ impl<'a> Inner<'a> {
         let mut max_index = 0;
 
         for i in 0..matches {
-            unsafe {
-                let min_index = *self.min_indices.get_unchecked(i) as usize;
+            unsafe_assert! { i < self.min_indices.len() };
+            let min_index = self.min_indices[i] as usize;
 
-                while *self.max_flags.get_unchecked(max_index) != 0 {
-                    max_index += 1;
+            loop {
+                unsafe_assert! { max_index < self.max_flags.len() };
+                if self.max_flags[max_index] == 0 {
+                    break;
                 }
-
-                if *self.min.get_unchecked(min_index) != *self.max.get_unchecked(max_index) {
-                    t += 1;
-                }
-
-                *self.min_indices.get_unchecked_mut(i) = -1;
-                *self.max_flags.get_unchecked_mut(max_index) = -1;
+                max_index += 1;
             }
+
+            unsafe_assert! { min_index < self.min.len() };
+            if self.min[min_index] != self.max[max_index] {
+                t += 1;
+            }
+
+            self.max_flags[max_index] = -1;
+            self.min_indices[i] = -1;
             max_index += 1;
         }
 
