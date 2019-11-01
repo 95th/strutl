@@ -110,8 +110,7 @@ impl<'a> Inner<'a> {
 
     fn matches(&mut self) -> usize {
         let range = (self.max.len() / 2).saturating_sub(1);
-        let mut matches = 0;
-        let mut index = 0;
+        let mut idx = 0;
         for i in 0..self.min.len() {
             let c1 = self.min[i];
             let start = i.saturating_sub(range);
@@ -120,16 +119,15 @@ impl<'a> Inner<'a> {
             for j in start..end {
                 let c2 = self.max[j];
                 if c1 == c2 && self.max_flags[j] != 0 {
-                    unsafe_assert! { index < self.min_indices.len() };
-                    self.min_indices[index] = i as isize;
+                    unsafe_assert! { idx < self.min_indices.len() };
+                    self.min_indices[idx] = i as isize;
                     self.max_flags[j] = 0;
-                    matches += 1;
                     index += 1;
                     break;
                 }
             }
         }
-        matches
+        idx
     }
 
     fn transpositions(&mut self, matches: usize) -> usize {
