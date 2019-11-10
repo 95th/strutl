@@ -27,9 +27,9 @@ impl fmt::Display for Soundex {
 }
 
 impl Soundex {
-    pub fn new(s: &str) -> Soundex {
+    pub fn new(s: impl AsRef<[u8]>) -> Soundex {
         Soundex {
-            value: soundex(s.as_bytes()),
+            value: soundex(s.as_ref()),
         }
     }
 }
@@ -41,7 +41,7 @@ fn soundex(b: &[u8]) -> Option<[u8; 4]> {
 
     let mut first = None;
     let mut last = 0;
-    let mut result = [b'0', b'0', b'0', b'0'];
+    let mut result = [b'0'; 4];
     let mut count = 1;
     for &c in b {
         if is_alphabetic(c) {
