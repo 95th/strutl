@@ -29,17 +29,16 @@ impl JaroWinkler {
     }
 
     /// Match two input strings and produces a score between 0 and 1.
-    pub fn apply(&mut self, s1: &str, s2: &str) -> f64 {
-        if s1.is_empty() && s2.is_empty() {
+    pub fn apply(&mut self, s1: impl AsRef<[u8]>, s2: impl AsRef<[u8]>) -> f64 {
+        let mut b1 = s1.as_ref();
+        let mut b2 = s2.as_ref();
+        if b1.is_empty() && b2.is_empty() {
             return 1.0;
         }
 
-        if s1.is_empty() || s2.is_empty() {
+        if b1.is_empty() || b2.is_empty() {
             return 0.0;
         }
-
-        let mut b1 = s1.as_bytes();
-        let mut b2 = s2.as_bytes();
 
         self.ensure_capacity(b1.len() + b2.len());
 
@@ -122,7 +121,7 @@ impl<'a> Inner<'a> {
                     unsafe_assert! { idx < self.min_indices.len() };
                     self.min_indices[idx] = i as isize;
                     self.max_flags[j] = 0;
-                    index += 1;
+                    idx += 1;
                     break;
                 }
             }
